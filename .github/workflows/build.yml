@@ -26,7 +26,8 @@ jobs:
       - name: Clone main-next branch
         run: |
           git clone --depth 1 --branch main-next https://github.com/SagerNet/sing-box.git
-
+          cd sing-box && git branch
+          
       - name: go build
         run: |
           cd sing-box
