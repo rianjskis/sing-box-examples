@@ -43,7 +43,7 @@ jobs:
           go build -tags ${{ env.TAG_ANDROID }} -v -o sing-box-android -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
 
       - name: Upload files
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sing-box
           path: |
