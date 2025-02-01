@@ -1,7 +1,8 @@
 name: build
 
 env:
-  ENV_LINUX: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v2
+  ENV_LINUX_AMD64: CGO_ENABLED=0 GOOS=linux GOARCH=amd64
+  ENV_LINUX_ARM64: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
   ENV_WINDOWS: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 GOAMD64=v3
   ENV_ANDROID: CGO_ENABLED=0 GOOS=android GOARCH=arm64
   TAG_LINUX: with_quic,with_dhcp,with_wireguard,with_ech,with_utls,with_reality_server,with_acme,with_clash_api,with_gvisor
@@ -30,13 +31,17 @@ jobs:
         run: |
           cd sing-box
           
-          # Linux 编译
-          go env -w ${{ env.ENV_LINUX }}
-          go build -tags ${{ env.TAG_LINUX }} -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+          # Linux AMD64 编译（不指定 GOAMD64）
+          go env -w ${{ env.ENV_LINUX_AMD64 }}
+          go build -tags ${{ env.TAG_LINUX }} -v -o sing-box-linux-amd64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
           
-          # Windows 编译
+          # Linux ARM64 编译
+          go env -w ${{ env.ENV_LINUX_ARM64 }}
+          go build -tags ${{ env.TAG_LINUX }} -v -o sing-box-linux-arm64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+          
+          # Windows 编译（GOAMD64=v3）
           go env -w ${{ env.ENV_WINDOWS }}
-          go build -tags ${{ env.TAG_WINDOWS }} -v -o sing-box.exe -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+          go build -tags ${{ env.TAG_WINDOWS }} -v -o sing-box-windows.exe -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
           
           # Android ARM64 编译
           go env -w ${{ env.ENV_ANDROID }}
@@ -47,6 +52,7 @@ jobs:
         with:
           name: sing-box
           path: |
-            sing-box/sing-box
-            sing-box/sing-box.exe
+            sing-box/sing-box-linux-amd64
+            sing-box/sing-box-linux-arm64
+            sing-box/sing-box-windows.exe
             sing-box/sing-box-android
