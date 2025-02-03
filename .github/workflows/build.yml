@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup Go
+      - name: Setup GO
         uses: actions/setup-go@v4
         with:
           go-version: '1.23.5'
@@ -28,7 +28,7 @@ jobs:
           git clone --depth 1 --branch main-next https://github.com/SagerNet/sing-box.git
           cd sing-box && git branch
 
-      - name: Go build
+      - name: go build
         run: |
           cd sing-box
           
@@ -53,10 +53,10 @@ jobs:
         with:
           name: sing-box
           path: |
-            sing-box-linux-amd64
-            sing-box-linux-arm64
-            sing-box-windows.exe
-            sing-box-android
+            sing-box/sing-box-linux-amd64
+            sing-box/sing-box-linux-arm64
+            sing-box/sing-box-windows.exe
+            sing-box/sing-box-android
 
       - name: 删除工作流程运行
         uses: Mattraks/delete-workflow-runs@v2
