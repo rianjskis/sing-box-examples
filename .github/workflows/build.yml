@@ -1,30 +1,33 @@
 name: buildenv
 
-ENV_LINUX_AMD64: CGO_ENABLED=0 GOOS=linux GOARCH=amd64  
-ENV_LINUX_ARM64: CGO_ENABLED=0 GOOS=linux GOARCH=arm64  
-ENV_WINDOWS: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 GOAMD64=v3  
-ENV_ANDROID: CGO_ENABLED=0 GOOS=android GOARCH=arm64  
-TAG_LINUX: with_quic,with_dhcp,with_wireguard,with_ech,with_utls,with_reality_server,with_acme,with_clash_api,with_gvisor  
-TAG_WINDOWS: with_quic,with_dhcp,with_wireguard,with_ech,with_utls,with_reality_server,with_acme,with_clash_api,with_gvisor  
-TAG_ANDROID: with_quic,with_dhcp,with_wireguard,with_ech,with_utls,with_reality_server,with_acme,with_clash_api,with_gvisoron:
-
-workflow_dispatch:
+on: 
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    env:
+      ENV_LINUX_AMD64: CGO_ENABLED=0 GOOS=linux GOARCH=amd64
+      ENV_LINUX_ARM64: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
+      ENV_WINDOWS: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 GOAMD64=v3
+      ENV_ANDROID: CGO_ENABLED=0 GOOS=android GOARCH=arm64
+      TAG_LINUX: with_quic,with_dhcp,with_wireguard,with_ech,with_utls,with_reality_server,with_acme,with_clash_api,with_gvisor
+      TAG_WINDOWS: with_quic,with_dhcp,with_wireguard,with_ech,with_utls,with_reality_server,with_acme,with_clash_api,with_gvisor
+      TAG_ANDROID: with_quic,with_dhcp,with_wireguard,with_ech,with_utls,with_reality_server,with_acme,with_clash_api,with_gvisoron
+
     steps:
       - name: Setup GO
         uses: actions/setup-go@v4
         with:
           go-version: '1.23.5'
           cache: false
-      
+
       - name: Clone main-next branch
         run: |
           git clone --depth 1 --branch main-next https://github.com/SagerNet/sing-box.git
           cd sing-box && git branch
-      
+
       - name: go build
         run: |
           cd sing-box
@@ -44,7 +47,7 @@ jobs:
           # Android ARM64 编译
           go env -w ${{ env.ENV_ANDROID }}
           go build -tags ${{ env.TAG_ANDROID }} -v -o sing-box-android -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
-      
+
       - name: Upload files
         uses: actions/upload-artifact@v4
         with:
@@ -68,7 +71,7 @@ jobs:
             --notes "Automated release from GitHub Actions"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: 删除工作流程运行
         uses: Mattraks/delete-workflow-runs@v2
         with:
