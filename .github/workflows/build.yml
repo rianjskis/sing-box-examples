@@ -1,5 +1,4 @@
-name: build
-
+name: buildenv
 env:
   ENV_LINUX_AMD64: CGO_ENABLED=0 GOOS=linux GOARCH=amd64
   ENV_LINUX_ARM64: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
@@ -15,7 +14,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Setup GO
         uses: actions/setup-go@v4
@@ -23,57 +21,54 @@ jobs:
           go-version: '1.23.5'
           cache: false
 
-      - name: Clone main-next branch
+      - name: Clone full repository history
         run: |
-          git clone --depth 1 --branch main-next https://github.com/SagerNet/sing-box.git
+          git clone --branch main-next https://github.com/SagerNet/sing-box.git
           cd sing-box
+          git fetch --unshallow  # Fetch the full history
           git branch
 
       - name: Go build
         run: |
           cd sing-box
-
           # Linux AMD64 编译
           go env -w ${{ env.ENV_LINUX_AMD64 }}
-          go build -tags ${{ env.TAG_LINUX }} -v -o sing-box-linux-amd64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
-
+          go build -tags ${{ env.TAG_LINUX }} -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
           # Linux ARM64 编译
           go env -w ${{ env.ENV_LINUX_ARM64 }}
-          go build -tags ${{ env.TAG_LINUX }} -v -o sing-box-linux-arm64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
-
+          go build -tags ${{ env.TAG_LINUX }} -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
           # Windows 编译
           go env -w ${{ env.ENV_WINDOWS }}
-          go build -tags ${{ env.TAG_WINDOWS }} -v -o sing-box-windows.exe -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
-
+          go build -tags ${{ env.TAG_WINDOWS }} -v -o sing-box.exe -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
           # Android ARM64 编译
           go env -w ${{ env.ENV_ANDROID }}
-          go build -tags ${{ env.TAG_ANDROID }} -v -o sing-box-android -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+          go build -tags ${{ env.TAG_ANDROID }} -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
 
       - name: Upload Linux AMD64
         uses: actions/upload-artifact@v4
         with:
           name: sing-box-linux-amd64
-          path: sing-box/sing-box-linux-amd64
+          path: sing-box/sing-box
 
       - name: Upload Linux ARM64
         uses: actions/upload-artifact@v4
         with:
           name: sing-box-linux-arm64
-          path: sing-box/sing-box-linux-arm64
+          path: sing-box/sing-box
 
       - name: Upload Windows
         uses: actions/upload-artifact@v4
         with:
           name: sing-box-windows
-          path: sing-box/sing-box-windows.exe
+          path: sing-box/sing-box.exe
 
       - name: Upload Android
         uses: actions/upload-artifact@v4
         with:
           name: sing-box-android
-          path: sing-box/sing-box-android
+          path: sing-box/sing-box
 
-      - name: 删除工作流程运行
+      - name: Delete workflow run
         uses: Mattraks/delete-workflow-runs@v2
         with:
           keep_minimum_runs: 1
