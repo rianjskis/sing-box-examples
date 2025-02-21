@@ -23,9 +23,8 @@ jobs:
 
       - name: Clone full repository history
         run: |
-          git clone --branch main-next https://github.com/SagerNet/sing-box.git
+          git clone main-next https://github.com/SagerNet/sing-box.git
           cd sing-box
-          git fetch --unshallow  # Fetch the full history
           git branch
 
       - name: Go build
