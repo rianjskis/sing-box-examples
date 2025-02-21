@@ -23,7 +23,7 @@ jobs:
 
       - name: Clone full repository history
         run: |
-          git clone main-next https://github.com/SagerNet/sing-box.git
+          git clone --branch main-next https://github.com/SagerNet/sing-box.git
           cd sing-box
           git branch
 
