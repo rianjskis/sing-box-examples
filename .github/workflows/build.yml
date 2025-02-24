@@ -33,7 +33,6 @@ jobs:
         # Build for Linux (AMD64)
         go env -w ${{ env.ENV_LINUX_AMD64 }}
         go build -tags ${{ env.TAG_LINUX }} -v -o sing-box-amd64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
-        
         # Build for Linux (ARM64)
         go env -w ${{ env.ENV_LINUX_ARM64 }}
         go build -tags ${{ env.TAG_LINUX }} -v -o sing-box-arm64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
@@ -41,17 +40,30 @@ jobs:
         # Build for Windows
         go env -w ${{ env.ENV_WINDOWS }}
         go build -tags ${{ env.TAG_WINDOWS }} -v -o sing-box.exe -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
-        
         # Build for Android
         go env -w ${{ env.ENV_ANDROID }}
         go build -tags ${{ env.TAG_ANDROID }} -v -o sing-box-android -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
 
-    - name: Upload files
+    - name: Upload Linux AMD64
       uses: actions/upload-artifact@main
       with:
-        name: sing-box
-        path: |
-          sing-box/sing-box-amd64
-          sing-box/sing-box-arm64
-          sing-box/sing-box.exe
-          sing-box/sing-box-android
+        name: sing-box-amd64
+        path: sing-box/sing-box-amd64
+
+    - name: Upload Linux ARM64
+      uses: actions/upload-artifact@main
+      with:
+        name: sing-box-arm64
+        path: sing-box/sing-box-arm64
+
+    - name: Upload Windows
+      uses: actions/upload-artifact@main
+      with:
+        name: sing-box.exe
+        path: sing-box/sing-box.exe
+
+    - name: Upload Android
+      uses: actions/upload-artifact@main
+      with:
+        name: sing-box-android
+        path: sing-box/sing-box-android
