@@ -8,7 +8,6 @@ env:
   TAG_LINUX: with_quic,with_dhcp,with_wireguard,with_utls,with_reality_server,with_acme,with_clash_api,with_gvisor
   TAG_WINDOWS: with_quic,with_dhcp,with_wireguard,with_utls,with_reality_server,with_acme,with_clash_api,with_gvisor
   TAG_ANDROID: with_quic,with_dhcp,with_wireguard,with_utls,with_reality_server,with_acme,with_clash_api,with_gvisor
-  TZ: Asia/Shanghai
 
 on:
   workflow_dispatch:
