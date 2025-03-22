@@ -33,17 +33,17 @@ jobs:
         cd sing-box
         # Build for Linux (AMD64)
         go env -w ${{ env.ENV_LINUX_AMD64 }}
-        go build -tags ${{ env.TAG_LINUX }} -v -o sing-box-amd64 ./cmd/sing-box
+        go build -tags ${{ env.TAG_LINUX }} -v sing-box-amd64 ./cmd/sing-box
         # Build for Linux (ARM64)
         go env -w ${{ env.ENV_LINUX_ARM64 }}
-        go build -tags ${{ env.TAG_LINUX }} -v -o sing-box-arm64 ./cmd/sing-box
+        go build -tags ${{ env.TAG_LINUX }} -v sing-box-arm64 ./cmd/sing-box
 
         # Build for Windows
         go env -w ${{ env.ENV_WINDOWS }}
-        go build -tags ${{ env.TAG_WINDOWS }} -v -o sing-box.exe ./cmd/sing-box
+        go build -tags ${{ env.TAG_WINDOWS }} -v sing-box.exe ./cmd/sing-box
         # Build for Android
         go env -w ${{ env.ENV_ANDROID }}
-        go build -tags ${{ env.TAG_ANDROID }} -v -o sing-box-android ./cmd/sing-box
+        go build -tags ${{ env.TAG_ANDROID }} -v sing-box-android ./cmd/sing-box
 
     - name: Upload Linux AMD64
       uses: actions/upload-artifact@main
