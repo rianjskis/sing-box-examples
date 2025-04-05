@@ -26,7 +26,7 @@ jobs:
 
     - name: git clone specific branch
       run: |
-        git clone -b main-next --single-branch https://github.com/SagerNet/sing-box
+        git clone -b dev-next --single-branch https://github.com/SagerNet/sing-box
 
     - name: go build
       run: | 
