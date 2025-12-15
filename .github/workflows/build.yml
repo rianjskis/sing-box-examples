@@ -1,50 +1,60 @@
-name: build
+name: Build sing-box (linux arm64)
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   build:
+    name: Build sing-box linux arm64
     runs-on: ubuntu-latest
 
-    env:
-      GOOS: linux
-      GOARCH: arm64
-      CGO_ENABLED: 0
+    permissions:
+      contents: read
 
     steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.5'
-          cache: false
+          go-version: '1.23.5'
+          check-latest: true
 
-      - name: Clone sing-box
+      - name: Verify Go version
+        run: go version
+
+      - name: Set build variables
         run: |
-          git clone --depth 1 https://github.com/SagerNet/sing-box.git
+          echo "GOOS=linux" >> $GITHUB_ENV
+          echo "GOARCH=arm64" >> $GITHUB_ENV
+          echo "CGO_ENABLED=0" >> $GITHUB_ENV
+          echo "TAGS=with_quic with_dhcp with_utls with_acme with_clash_api with_gvisor with_naive_outbound with_purego" >> $GITHUB_ENV
+          echo "OUTPUT=sing-box-linux-arm64" >> $GITHUB_ENV
 
-      - name: Download libcronet (purego)
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build sing-box
         run: |
-          mkdir -p sing-box/lib
-          curl -L -o sing-box/lib/libcronet.so \
-            https://github.com/cronet-go/cronet-go/releases/latest/download/libcronet-linux-arm64.so
+          go build \
+            -trimpath \
+            -tags "$TAGS" \
+            -ldflags "-s -w" \
+            -o "$OUTPUT" \
+            ./cmd/sing-box
 
-      - name: Build sing-box (purego)
-        working-directory: sing-box
+      - name: Check binary
         run: |
-         go env GOOS GOARCH
-         go build \
-         -tags "with_quic with_dhcp with_utls with_acme with_clash_api with_naive_outbound with_purego purego" \
-         -trimpath \
-         -ldflags "-s -w -buildid=" \
-         -o sing-box \
-         ./cmd/sing-box
+          file "$OUTPUT"
+          chmod +x "$OUTPUT"
+          ./"$OUTPUT" version || true
 
-
-      - name: Upload files
-        uses: actions/upload-artifact@main
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: sing-box
-          path: |
-            sing-box/sing-box
-            sing-box/lib/libcronet.so
+          name: sing-box-linux-arm64
+          path: sing-box-linux-arm64
