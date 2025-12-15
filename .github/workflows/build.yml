@@ -34,8 +34,16 @@ jobs:
       - name: Download libcronet.so for ARM64  
         run: |  
           cd ~/cronet-go  
-          # 下载预编译的 libcronet.so  
           wget -O libcronet.so https://github.com/sagernet/cronet-go/releases/latest/download/libcronet-linux-arm64.so  
+        
+      - name: Calculate version  
+        run: |  
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then  
+            VERSION="${{ inputs.version }}"  
+          else  
+            VERSION=$(go run -v ./cmd/internal/read_tag --ci --nightly)  
+          fi  
+          echo "VERSION=${VERSION}" >> "${GITHUB_ENV}"  
         
       - name: Set build tags  
         run: |  
@@ -46,7 +54,7 @@ jobs:
         run: |  
           mkdir -p dist  
           go build -v -trimpath -o dist/sing-box -tags "${BUILD_TAGS}" \  
-          -ldflags '-s -w -buildid= -X github.com/sagernet/sing-box/constant.Version=${{ github.ref_name }}' \  
+          -ldflags '-s -buildid= -X github.com/sagernet/sing-box/constant.Version=${{ env.VERSION }} -checklinkname=0' \  
           ./cmd/sing-box  
         env:  
           CGO_ENABLED: "0"  
