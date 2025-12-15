@@ -29,12 +29,12 @@ jobs:
         # Download libcronet.so for arm64  
         wget -O dist/libcronet.so https://github.com/sagernet/cronet-go/releases/latest/download/libcronet-linux-arm64.so  
         
-    - name: go build
-      run: | 
-        cd sing-box
-        go env -w ${{ env.ENV_LINUX }}
-        go build -tags ${{ env.TAG_LINUX }} -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
-      env:  
+    - name: go build  
+      run: |   
+        cd sing-box  
+        go env -w ${{ env.ENV_LINUX }}  
+        go build -tags ${{ env.TAG_LINUX }},purego -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box  
+      env:    
         PUREGO: "1"
     - name: Upload files
       uses: actions/upload-artifact@main
