@@ -6,11 +6,8 @@ on:
 env:
   GOOS: linux
   GOARCH: arm64
-  CGO_ENABLED: 1
-  CC: aarch64-linux-gnu-gcc
-  CXX: aarch64-linux-gnu-g++
+  CGO_ENABLED: 0
   TZ: Asia/Shanghai
-
   TAG_LINUX: >
     with_quic
     with_dhcp
@@ -33,28 +30,19 @@ jobs:
           go-version: stable
           cache: false
 
-      # 👉【关键新增】安装 ARM64 交叉编译器
-      - name: Install ARM64 cross compiler
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            gcc-aarch64-linux-gnu \
-            g++-aarch64-linux-gnu
-
       - name: Clone sing-box (dev-next)
         run: |
           git clone --branch dev-next --depth=1 https://github.com/SagerNet/sing-box
           cd sing-box
           go version
 
-      - name: Build sing-box (Linux ARM64)
+      - name: Build sing-box (Linux ARM64, purego)
         run: |
           cd sing-box
 
           echo "GOOS=$GOOS"
           echo "GOARCH=$GOARCH"
           echo "CGO_ENABLED=$CGO_ENABLED"
-          echo "CC=$CC"
           echo "TAGS=$TAG_LINUX"
 
           go build \
