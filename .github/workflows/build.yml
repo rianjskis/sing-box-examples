@@ -35,7 +35,7 @@ jobs:
         go env -w ${{ env.ENV_LINUX }}
         go build -tags ${{ env.TAG_LINUX }} -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
       env:  
-       PUREGO: "1"
+        PUREGO: "1"
     - name: Upload files
       uses: actions/upload-artifact@main
       with:
