@@ -1,9 +1,9 @@
 name: build
 
 env:
-  # 设置 GO 环境变量，启用 CGO 以支持 cronet-go
-  ENV_LINUX: CGO_ENABLED=1 GOOS=linux GOARCH=arm64
-  # 这里去掉了 with_cronet 相关 tag，因为我们使用 purego 方案
+  # 纯 Go，无需 CGO
+  ENV_LINUX: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
+  # 纯 Go tag，去掉 cronet/go 依赖
   TAG_LINUX: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego,with_ccm,badlinkname,tfogo_checklinkname0
 
 on:
@@ -20,19 +20,13 @@ jobs:
         go-version: '1.25.5'
         cache: false
 
-    - name: Install build tools
-      run: |
-        sudo apt update
-        sudo apt install -y build-essential gcc clang git
-
     - name: Git clone sing-box
-      run: |
-        git clone --depth 1 https://github.com/SagerNet/sing-box.git
+      run: git clone --depth 1 https://github.com/SagerNet/sing-box.git
 
-    - name: Go build
+    - name: Go build sing-box (pure Go)
       run: |
         cd sing-box
-        # 写入 GO 环境
+        # 写入 GO 环境变量
         go env -w ${{ env.ENV_LINUX }}
         # 编译 sing-box
         go build -tags ${{ env.TAG_LINUX }} -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
