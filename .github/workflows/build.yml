@@ -1,4 +1,4 @@
-name: Build sing-box Linux ARM64 (PureGo)  
+name: Build sing-box with Naive  
   
 on:  
   workflow_dispatch:  
@@ -6,16 +6,15 @@ on:
       version:  
         description: "Version name"  
         required: true  
-        default: "1.13.0-alpha.29"  
+        type: string  
   
 jobs:  
   build:  
     runs-on: ubuntu-latest  
     steps:  
-      - name: Checkout sing-box  
+      - name: Checkout  
         uses: actions/checkout@v5  
         with:  
-          repository: SagerNet/sing-box  
           fetch-depth: 0  
         
       - name: Setup Go  
@@ -27,38 +26,36 @@ jobs:
         run: |  
           git clone --recursive --depth=1 https://github.com/sagernet/cronet-go.git ~/cronet-go  
         
-      - name: Download libcronet.so for ARM64  
+      - name: Cache Chromium toolchain  
+        uses: actions/cache@v4  
+        with:  
+          path: |  
+            ~/cronet-go/naiveproxy/src/third_party/llvm-build/Release+Asserts  
+            ~/cronet-go/naiveproxy/src/out/sysroot-build  
+          key: chromium-toolchain-arm64-glibc  
+        
+      - name: Download Chromium toolchain  
         run: |  
           cd ~/cronet-go  
-          wget -O libcronet.so https://github.com/sagernet/cronet-go/releases/latest/download/libcronet-linux-arm64.so  
-        
-      - name: Set git tag  
-        run: |  
-          git tag v${{ inputs.version }} -f  
+          go run ./cmd/build-naive --target=linux/arm64 download-toolchain  
         
       - name: Build sing-box  
         run: |  
+          cd ~/cronet-go  
+          eval $(go run ./cmd/build-naive --target=linux/arm64 env)  
+          cd $GITHUB_WORKSPACE  
           mkdir -p dist  
           go build -v -trimpath -o dist/sing-box \  
-          -tags 'with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_acme,with_clash_api,with_tailscale,with_ccm,badlinkname,tfogo_checklinkname0,with_naive_outbound,with_purego' \  
-          -ldflags '-s -buildid= -X github.com/sagernet/sing-box/constant.Version=${{ inputs.version }} -checklinkname=0' \  
+          -tags "with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_acme,with_clash_api,with_tailscale,with_ccm,with_naive_outbound,badlinkname,tfogo_checklinkname0" \  
+          -ldflags '-s -w -buildid= -X github.com/sagernet/sing-box/constant.Version=${{ inputs.version }} -checklinkname=0' \  
           ./cmd/sing-box  
         env:  
-          CGO_ENABLED: "0"  
+          CGO_ENABLED: "1"  
           GOOS: linux  
           GOARCH: arm64  
-        
-      - name: Prepare package  
-        run: |  
-          cd dist  
-          mkdir -p sing-box-linux-arm64  
-          cp sing-box sing-box-linux-arm64/  
-          cp ~/cronet-go/libcronet.so sing-box-linux-arm64/  
-          cp ../LICENSE sing-box-linux-arm64/  
-          tar -czf sing-box-linux-arm64.tar.gz sing-box-linux-arm64/  
         
       - name: Upload artifact  
         uses: actions/upload-artifact@v4  
         with:  
-          name: sing-box-linux-arm64  
-          path: dist/sing-box-linux-arm64.tar.gz
+          name: sing-box-linux-arm64-glibc  
+          path: dist/sing-box
