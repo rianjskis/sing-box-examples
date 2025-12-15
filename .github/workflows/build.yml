@@ -1,7 +1,6 @@
 name: build
 
 env:
-  ENV_LINUX_AMD64: CGO_ENABLED=0 GOOS=linux GOARCH=amd64
   ENV_LINUX_ARM64: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
   ENV_WINDOWS: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 GOAMD64=v3
   ENV_ANDROID: CGO_ENABLED=1 GOOS=android GOARCH=arm64
@@ -31,9 +30,6 @@ jobs:
     - name: go build
       run: | 
         cd sing-box
-        # Build for Linux (AMD64)
-        go env -w ${{ env.ENV_LINUX_AMD64 }}
-        go build -tags ${{ env.TAG_LINUX }} -v -o sing-box-amd64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
         # Build for Linux (ARM64)
         go env -w ${{ env.ENV_LINUX_ARM64 }}
         go build -tags ${{ env.TAG_LINUX }} -v -o sing-box-arm64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
