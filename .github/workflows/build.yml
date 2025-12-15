@@ -41,18 +41,19 @@ jobs:
         
       - name: Build sing-box  
         run: |  
+          set -xeuo pipefail  
           cd ~/cronet-go  
           eval $(go run ./cmd/build-naive --target=linux/arm64 env)  
           cd $GITHUB_WORKSPACE  
           mkdir -p dist  
-          go build -v -trimpath -o dist/sing-box \  
-          -tags "with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_acme,with_clash_api,with_tailscale,with_ccm,with_naive_outbound,badlinkname,tfogo_checklinkname0" \  
-          -ldflags '-s -w -buildid= -X github.com/sagernet/sing-box/constant.Version=${{ inputs.version }} -checklinkname=0' \  
+          go build -v -trimpath -o dist/sing-box -tags "${BUILD_TAGS}" \  
+          -ldflags '-s -buildid= -X github.com/sagernet/sing-box/constant.Version=${{ inputs.version }} -checklinkname=0' \  
           ./cmd/sing-box  
         env:  
           CGO_ENABLED: "1"  
           GOOS: linux  
           GOARCH: arm64  
+          BUILD_TAGS: "with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_acme,with_clash_api,with_tailscale,with_ccm,with_naive_outbound,badlinkname,tfogo_checklinkname0"  
         
       - name: Upload artifact  
         uses: actions/upload-artifact@v4  
