@@ -1,10 +1,11 @@
 name: build
 
 env:
-  # 纯 Go，无需 CGO
-  ENV_LINUX: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
-  # 纯 Go tag，去掉 cronet/go 依赖
-  TAG_LINUX: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego,with_ccm,badlinkname,tfogo_checklinkname0
+  GO_VERSION: '1.25.5'
+  GOOS: linux
+  GOARCH: arm64
+  CGO_ENABLED: 1
+  TAG_LINUX: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_ccm,badlinkname,tfogo_checklinkname0
 
 on:
   workflow_dispatch:
@@ -17,17 +18,26 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.25.5'
+        go-version: ${{ env.GO_VERSION }}
         cache: false
 
-    - name: Git clone sing-box
+    - name: Install cross-compilation tools
+      run: |
+        sudo apt update
+        sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu make git
+
+    - name: Clone sing-box
       run: git clone --depth 1 https://github.com/SagerNet/sing-box.git
 
-    - name: Go build sing-box (pure Go)
+    - name: Go build sing-box (cross-compile CGO)
       run: |
         cd sing-box
-        # 写入 GO 环境变量
-        go env -w ${{ env.ENV_LINUX }}
+        # 设置交叉编译器
+        export CC=aarch64-linux-gnu-gcc
+        export CXX=aarch64-linux-gnu-g++
+        export CGO_ENABLED=1
+        export GOOS=linux
+        export GOARCH=arm64
         # 编译 sing-box
         go build -tags ${{ env.TAG_LINUX }} -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
 
