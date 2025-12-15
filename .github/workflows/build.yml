@@ -1,66 +1,62 @@
-name: build
-
-env:
-  ENV_LINUX_ARM64: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
-  ENV_WINDOWS: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 GOAMD64=v3
-  ENV_ANDROID: CGO_ENABLED=1 GOOS=android GOARCH=arm64
-  TAG_LINUX: with_quic,with_dhcp,with_wireguard,with_utls,with_reality_server,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego
-  TAG_WINDOWS: with_quic,with_dhcp,with_wireguard,with_utls,with_reality_server,with_acme,with_clash_api,with_gvisor
-  TAG_ANDROID: with_quic,with_dhcp,with_wireguard,with_utls,with_reality_server,with_acme,with_clash_api,with_gvisor
-  TZ: Asia/Shanghai
+name: sing-box-linux-arm64
 
 on:
   workflow_dispatch:
+
+env:
+  GOOS: linux
+  GOARCH: arm64
+  CGO_ENABLED: 0
+  TZ: Asia/Shanghai
+
+  TAG_LINUX: >
+    with_quic,
+    with_dhcp,
+    with_wireguard,
+    with_utls,
+    with_reality_server,
+    with_acme,
+    with_clash_api,
+    with_gvisor,
+    with_naive_outbound,
+    with_purego
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Setup Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: stable
-        cache: false
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: stable
+          cache: false
 
-    - name: git clone specific branch
-      run: |
-        git clone --branch dev-next --depth=1 https://github.com/SagerNet/sing-box
+      - name: Clone sing-box (dev-next)
+        run: |
+          git clone --branch dev-next --depth=1 https://github.com/SagerNet/sing-box
+          cd sing-box
+          go version
 
-    - name: go build
-      run: | 
-        cd sing-box
-        # Build for Linux (ARM64)
-        go env -w ${{ env.ENV_LINUX_ARM64 }}
-        go build -tags ${{ env.TAG_LINUX }} -v -o sing-box-arm64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+      - name: Build sing-box (Linux ARM64)
+        run: |
+          cd sing-box
 
-        # Build for Windows
-        go env -w ${{ env.ENV_WINDOWS }}
-        go build -tags ${{ env.TAG_WINDOWS }} -v -o sing-box.exe -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
-        # Build for Android
-        go env -w ${{ env.ENV_ANDROID }}
-        go build -tags ${{ env.TAG_ANDROID }} -v -o sing-box-android -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+          echo "GOOS=$GOOS"
+          echo "GOARCH=$GOARCH"
+          echo "CGO_ENABLED=$CGO_ENABLED"
+          echo "TAGS=$TAG_LINUX"
 
-    - name: Upload Linux AMD64
-      uses: actions/upload-artifact@main
-      with:
-        name: sing-box-amd64
-        path: sing-box/sing-box-amd64
+          go build \
+            -tags "$TAG_LINUX" \
+            -trimpath \
+            -ldflags "-s -w -buildid=" \
+            -v \
+            -o sing-box-linux-arm64 \
+            ./cmd/sing-box
 
-    - name: Upload Linux ARM64
-      uses: actions/upload-artifact@main
-      with:
-        name: sing-box-arm64
-        path: sing-box/sing-box-arm64
-
-    - name: Upload Windows
-      uses: actions/upload-artifact@main
-      with:
-        name: sing-box.exe
-        path: sing-box/sing-box.exe
-
-    - name: Upload Android
-      uses: actions/upload-artifact@main
-      with:
-        name: sing-box-android
-        path: sing-box/sing-box-android
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sing-box-linux-arm64
+          path: sing-box/sing-box-linux-arm64
