@@ -1,7 +1,7 @@
 name: build
 
 env:
-  ENV_LINUX: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
+  ENV_LINUX: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 PUREGO=1
   TAG_LINUX: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego,with_ccm,badlinkname,tfogo_checklinkname0
 
 on:
