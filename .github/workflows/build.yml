@@ -1,9 +1,5 @@
 name: build
 
-env:
-  ENV_LINUX: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
-  TAG_LINUX: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego,badlinkname,tfogo_checklinkname0
-
 on:
   workflow_dispatch:
 
@@ -11,26 +7,44 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      GOOS: linux
+      GOARCH: arm64
+      CGO_ENABLED: 0
+      TAG_LINUX: >
+        with_quic
+        with_dhcp
+        with_utls
+        with_acme
+        with_clash_api
+        with_naive_outbound
+        with_purego
+
     steps:
-    - name: Setup Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.25.5'
-        cache: false
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.5'
+          cache: false
 
-    - name: git clone
-      run: |
-        git clone --depth 1 https://github.com/SagerNet/sing-box.git
+      - name: git clone
+        run: |
+          git clone --depth 1 https://github.com/SagerNet/sing-box.git
 
-    - name: go build
-      run: | 
-        cd sing-box
-        go env -w ${{ env.ENV_LINUX }}
-        go build -tags ${{ env.TAG_LINUX }} -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+      - name: go build
+        working-directory: sing-box
+        run: |
+          go env
+          go build \
+            -tags "${TAG_LINUX}" \
+            -v \
+            -o sing-box \
+            -trimpath \
+            -ldflags "-s -w -buildid=" \
+            ./cmd/sing-box
 
-    - name: Upload files
-      uses: actions/upload-artifact@main
-      with:
-        name: sing-box
-        path: |
-          sing-box/sing-box
+      - name: Upload files
+        uses: actions/upload-artifact@main
+        with:
+          name: sing-box
+          path: sing-box/sing-box
