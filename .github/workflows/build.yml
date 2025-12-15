@@ -19,6 +19,7 @@ jobs:
         with_clash_api
         with_naive_outbound
         with_purego
+        purego
 
     steps:
       - name: Setup Go
