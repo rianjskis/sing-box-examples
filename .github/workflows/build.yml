@@ -1,62 +1,43 @@
-name: Build sing-box with Naive  
-  
-on:  
-  workflow_dispatch:  
-    inputs:  
-      version:  
-        description: "Version name"  
-        required: true  
-        type: string  
-  
-jobs:  
-  build:  
-    runs-on: ubuntu-latest  
-    steps:  
-      - name: Checkout  
-        uses: actions/checkout@v5  
-        with:  
-          fetch-depth: 0  
+name: build
+
+env:
+  ENV_LINUX: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
+  TAG_LINUX: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego,with_ccm,badlinkname,tfogo_checklinkname0
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25.5'
+        cache: false
+
+    - name: git clone
+      run: |
+        git clone --depth 1 https://github.com/SagerNet/sing-box.git
+
+    - name: Download libcronet.so  
+      run: |  
+        cd sing-box  
+        mkdir -p dist  
+        # Download libcronet.so for arm64  
+        wget -O dist/libcronet.so https://github.com/sagernet/cronet-go/releases/latest/download/libcronet-linux-arm64.so  
         
-      - name: Setup Go  
-        uses: actions/setup-go@v5  
-        with:  
-          go-version: ^1.25.4  
-        
-      - name: Clone cronet-go  
-        run: |  
-          git clone --recursive --depth=1 https://github.com/sagernet/cronet-go.git ~/cronet-go  
-        
-      - name: Cache Chromium toolchain  
-        uses: actions/cache@v4  
-        with:  
-          path: |  
-            ~/cronet-go/naiveproxy/src/third_party/llvm-build/Release+Asserts  
-            ~/cronet-go/naiveproxy/src/out/sysroot-build  
-          key: chromium-toolchain-arm64-glibc  
-        
-      - name: Download Chromium toolchain  
-        run: |  
-          cd ~/cronet-go  
-          go run ./cmd/build-naive --target=linux/arm64 download-toolchain  
-        
-      - name: Build sing-box  
-        run: |  
-          set -xeuo pipefail  
-          cd ~/cronet-go  
-          eval $(go run ./cmd/build-naive --target=linux/arm64 env)  
-          cd $GITHUB_WORKSPACE  
-          mkdir -p dist  
-          go build -v -trimpath -o dist/sing-box -tags "${BUILD_TAGS}" \  
-          -ldflags '-s -buildid= -X github.com/sagernet/sing-box/constant.Version=${{ inputs.version }} -checklinkname=0' \  
-          ./cmd/sing-box  
-        env:  
-          CGO_ENABLED: "1"  
-          GOOS: linux  
-          GOARCH: arm64  
-          BUILD_TAGS: "with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_acme,with_clash_api,with_tailscale,with_ccm,with_naive_outbound,badlinkname,tfogo_checklinkname0"  
-        
-      - name: Upload artifact  
-        uses: actions/upload-artifact@v4  
-        with:  
-          name: sing-box-linux-arm64-glibc  
-          path: dist/sing-box
+    - name: go build
+      run: | 
+        cd sing-box
+        go env -w ${{ env.ENV_LINUX }}
+        go build -tags ${{ env.TAG_LINUX }} -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+
+    - name: Upload files
+      uses: actions/upload-artifact@main
+      with:
+        name: sing-box
+        path: |
+          sing-box/sing-box
