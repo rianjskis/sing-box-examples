@@ -7,6 +7,8 @@ env:
   GOOS: linux
   GOARCH: arm64
   CGO_ENABLED: 1
+  CC: aarch64-linux-gnu-gcc
+  CXX: aarch64-linux-gnu-g++
   TZ: Asia/Shanghai
 
   TAG_LINUX: >
@@ -21,7 +23,6 @@ env:
     with_naive_outbound
     with_purego
 
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -32,6 +33,14 @@ jobs:
         with:
           go-version: stable
           cache: false
+
+      # 👉【关键新增】安装 ARM64 交叉编译器
+      - name: Install ARM64 cross compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu
 
       - name: Clone sing-box (dev-next)
         run: |
@@ -46,6 +55,7 @@ jobs:
           echo "GOOS=$GOOS"
           echo "GOARCH=$GOARCH"
           echo "CGO_ENABLED=$CGO_ENABLED"
+          echo "CC=$CC"
           echo "TAGS=$TAG_LINUX"
 
           go build \
@@ -55,6 +65,8 @@ jobs:
             -v \
             -o sing-box-linux-arm64 \
             ./cmd/sing-box
+
+          file sing-box-linux-arm64
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
