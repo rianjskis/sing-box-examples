@@ -1,7 +1,9 @@
 name: build
 
 env:
-  ENV_LINUX: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
+  # 设置 GO 环境变量，启用 CGO 以支持 cronet-go
+  ENV_LINUX: CGO_ENABLED=1 GOOS=linux GOARCH=arm64
+  # 这里去掉了 with_cronet 相关 tag，因为我们使用 purego 方案
   TAG_LINUX: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego,with_ccm,badlinkname,tfogo_checklinkname0
 
 on:
@@ -18,27 +20,25 @@ jobs:
         go-version: '1.25.5'
         cache: false
 
-    - name: git clone
+    - name: Install build tools
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential gcc clang git
+
+    - name: Git clone sing-box
       run: |
         git clone --depth 1 https://github.com/SagerNet/sing-box.git
 
-    - name: Download libcronet.so  
-      run: |  
-        cd sing-box  
-        mkdir -p dist  
-        # Download libcronet.so for arm64  
-        wget -O dist/libcronet.so https://github.com/sagernet/cronet-go/releases/latest/download/libcronet-linux-arm64.so  
-        
-    - name: go build  
-      run: |   
-        cd sing-box  
-        go env -w ${{ env.ENV_LINUX }}  
-        go build -tags ${{ env.TAG_LINUX }},purego -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box  
-      env:    
-        PUREGO: "1"
-    - name: Upload files
-      uses: actions/upload-artifact@main
+    - name: Go build
+      run: |
+        cd sing-box
+        # 写入 GO 环境
+        go env -w ${{ env.ENV_LINUX }}
+        # 编译 sing-box
+        go build -tags ${{ env.TAG_LINUX }} -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
       with:
         name: sing-box
-        path: |
-          sing-box/sing-box
+        path: sing-box/sing-box
