@@ -1,36 +1,52 @@
 name: build
 
+on:
+  workflow_dispatch:
+
 env:
   ENV_LINUX: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
   TAG_LINUX: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego
-
-on:
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: "1.25.5"
-          cache: false
+          cache: true
 
-      - name: git clone
+      - name: Download precompiled libcronet.so
         run: |
-          git clone --depth 1 https://github.com/SagerNet/sing-box.git
+          mkdir -p cronet
+          # 下载预编译好的 Linux/ARM64 Cronet library（需要确认下链接是否存在）
+          curl -L -o cronet/libcronet.so \
+            https://github.com/SagerNet/cronet-go/releases/download/latest/libcronet-linux-arm64.so
 
-      - name: go build
+      - name: Build sing-box
         run: |
           cd sing-box
+          # 应用交叉编译环境
           go env -w ${{ env.ENV_LINUX }}
-          go build -tags ${{ env.TAG_LINUX }} -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
 
-      - name: Upload files
+          # 将 libcronet.so 拷贝到 sing-box 源码下
+          cp ../cronet/libcronet.so .
+
+          # 编译带 with_naive_outbound 和 with_purego
+          go build \
+            -tags "${{ env.TAG_LINUX }}" \
+            -v -o sing-box \
+            -trimpath \
+            -ldflags "-s -w -buildid=" \
+            ./cmd/sing-box
+
+      - name: Upload build artifact
         uses: actions/upload-artifact@main
         with:
           name: sing-box
-          path: |
-            sing-box/sing-box
+          path: sing-box/sing-box
