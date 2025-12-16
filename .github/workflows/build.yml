@@ -40,7 +40,7 @@ jobs:
             -o sing-box-arm64-musl ./cmd/sing-box
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@main
         with:
           name: sing-box-arm64-musl
           path: sing-box/sing-box-arm64-musl
