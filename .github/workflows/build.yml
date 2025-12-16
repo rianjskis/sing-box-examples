@@ -1,4 +1,8 @@
-name: build-arm64-musl
+name: build
+
+env:
+  ENV_LINUX: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
+  TAG_LINUX: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego,with_ccm,badlinkname,tfogo_checklinkname0
 
 on:
   workflow_dispatch:
@@ -8,39 +12,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25.5'
+        cache: false
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.25.5"
-          cache: false
+    - name: git clone
+      run: |
+        git clone --depth 1 https://github.com/SagerNet/sing-box.git
 
-      - name: Build cronet-go toolchain
-        run: |
-          git clone --recursive https://github.com/SagerNet/cronet-go.git
-          cd cronet-go
-          go run ./cmd/build-naive --target=linux/arm64 --libc=musl download-toolchain
-          echo "ENV=$(go run ./cmd/build-naive --target=linux/arm64 --libc=musl env)" > ../cronet_env
+    - name: go build
+      run: | 
+        cd sing-box
+        go env -w ${{ env.ENV_LINUX }}
+        go build -tags ${{ env.TAG_LINUX }} -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
 
-      - name: Export cronet env
-        run: |
-          source cronet_env
-          # cronet env will set CC/CXX/LD/LDFLAGS/CFLAGS etc.
-
-      - name: Build sing-box arm64 musl
-        run: |
-          export CGO_ENABLED=1
-          export GOOS=linux
-          export GOARCH=arm64
-          source cronet_env
-          cd sing-box
-          go build -tags "with_gvisor,with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_ccm,badlinkname,tfogo_checklinkname0,with_naive_outbound,with_musl" \
-            -o sing-box-arm64-musl ./cmd/sing-box
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@main
-        with:
-          name: sing-box-arm64-musl
-          path: sing-box/sing-box-arm64-musl
+    - name: Upload files
+      uses: actions/upload-artifact@v3
+      with:
+        name: sing-box
+        path: |
+          sing-box/sing-box
