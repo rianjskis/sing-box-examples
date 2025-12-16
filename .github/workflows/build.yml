@@ -20,7 +20,9 @@ jobs:
         with:
           go-version: "1.25.5"
           cache: true
-
+      - name: git clone
+        run: |
+          git clone --depth 1 https://github.com/SagerNet/sing-box.git
       - name: Download precompiled libcronet.so
         run: |
           mkdir -p cronet
