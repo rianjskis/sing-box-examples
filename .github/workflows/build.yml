@@ -4,50 +4,62 @@ on:
   workflow_dispatch:
 
 env:
-  ENV_LINUX: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
-  TAG_LINUX: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego
+  GO_VERSION: 1.25.5
+  TARGET_OS: linux
+  TARGET_ARCH: arm64
+  SING_TAGS: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout sing-box
         uses: actions/checkout@v3
+        with:
+          path: sing-box
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.5"
+          go-version: ${{ env.GO_VERSION }}
           cache: true
-      - name: git clone
+
+      - name: Checkout cronet-go
         run: |
-          git clone --depth 1 https://github.com/SagerNet/sing-box.git
-      - name: Download precompiled libcronet.so
+          git clone https://github.com/SagerNet/cronet-go.git cronet-go
+
+      - name: Build libcronet.so for linux/arm64
         run: |
-          mkdir -p cronet
-          # 下载预编译好的 Linux/ARM64 Cronet library（需要确认下链接是否存在）
-          curl -L -o cronet/libcronet.so \
-            https://github.com/SagerNet/cronet-go/releases/download/latest/libcronet-linux-arm64.so
+          cd cronet-go
+          # 下载或构建生成 native 工具链
+          go run ./cmd/build-naive --target=${{ env.TARGET_OS }}/${{ env.TARGET_ARCH }} download-toolchain
+          # 获取构建环境变量
+          export $(go run ./cmd/build-naive --target=${{ env.TARGET_OS }}/${{ env.TARGET_ARCH }} env)
+          # 编译 native libcronet.so
+          go run ./cmd/build-naive --target=${{ env.TARGET_OS }}/${{ env.TARGET_ARCH }}
+          # 输出目录里应该会有生成的 libcronet.so
+          cp out/libcronet.so ../
+
+      - name: Prepare sing-box build
+        run: |
+          cp libcronet.so sing-box/
 
       - name: Build sing-box
+        working-directory: sing-box
         run: |
-          cd sing-box
-          # 应用交叉编译环境
-          go env -w ${{ env.ENV_LINUX }}
-
-          # 将 libcronet.so 拷贝到 sing-box 源码下
-          cp ../cronet/libcronet.so .
-
-          # 编译带 with_naive_outbound 和 with_purego
+          # 设置纯 Go + 交叉编译环境
+          go env -w CGO_ENABLED=0
+          go env -w GOOS=${{ env.TARGET_OS }}
+          go env -w GOARCH=${{ env.TARGET_ARCH }}
+          # 编译
           go build \
-            -tags "${{ env.TAG_LINUX }}" \
+            -tags "${{ env.SING_TAGS }}" \
             -v -o sing-box \
             -trimpath \
             -ldflags "-s -w -buildid=" \
             ./cmd/sing-box
 
-      - name: Upload build artifact
+      - name: Upload build output
         uses: actions/upload-artifact@main
         with:
           name: sing-box
