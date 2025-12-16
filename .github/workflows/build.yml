@@ -1,66 +1,36 @@
 name: build
 
+env:
+  ENV_LINUX: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v2
+  TAG_LINUX: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego
+  
 on:
   workflow_dispatch:
-
-env:
-  GO_VERSION: 1.25.5
-  TARGET_OS: linux
-  TARGET_ARCH: arm64
-  SING_TAGS: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout sing-box
-        uses: actions/checkout@v3
-        with:
-          path: sing-box
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25.5'
+        cache: false
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
+    - name: git clone
+      run: |
+        git clone --depth 1 https://github.com/SagerNet/sing-box.git
 
-      - name: Checkout cronet-go
-        run: |
-          git clone https://github.com/SagerNet/cronet-go.git cronet-go
+    - name: go build
+      run: | 
+        cd sing-box
+        go env -w ${{ env.ENV_LINUX }}
+        go build -tags ${{ env.TAG_LINUX }} -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
 
-      - name: Build libcronet.so for linux/arm64
-        run: |
-          cd cronet-go
-          # 下载或构建生成 native 工具链
-          go run ./cmd/build-naive --target=${{ env.TARGET_OS }}/${{ env.TARGET_ARCH }} download-toolchain
-          # 获取构建环境变量
-          export $(go run ./cmd/build-naive --target=${{ env.TARGET_OS }}/${{ env.TARGET_ARCH }} env)
-          # 编译 native libcronet.so
-          go run ./cmd/build-naive --target=${{ env.TARGET_OS }}/${{ env.TARGET_ARCH }}
-          # 输出目录里应该会有生成的 libcronet.so
-          cp out/libcronet.so ../
-
-      - name: Prepare sing-box build
-        run: |
-          cp libcronet.so sing-box/
-
-      - name: Build sing-box
-        working-directory: sing-box
-        run: |
-          # 设置纯 Go + 交叉编译环境
-          go env -w CGO_ENABLED=0
-          go env -w GOOS=${{ env.TARGET_OS }}
-          go env -w GOARCH=${{ env.TARGET_ARCH }}
-          # 编译
-          go build \
-            -tags "${{ env.SING_TAGS }}" \
-            -v -o sing-box \
-            -trimpath \
-            -ldflags "-s -w -buildid=" \
-            ./cmd/sing-box
-
-      - name: Upload build output
-        uses: actions/upload-artifact@main
-        with:
-          name: sing-box
-          path: sing-box/sing-box
+    - name: Upload files
+      uses: actions/upload-artifact@main
+      with:
+        name: sing-box
+        path: |
+          sing-box/sing-box
