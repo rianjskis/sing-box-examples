@@ -45,7 +45,8 @@ jobs:
           GOARCH=amd64 \
           GOAMD64=v3 \
           make build
-
+          mv sing-box sing-box_windows_amd64.exe
+          
           echo "=== Build Android arm64 ==="
           CGO_ENABLED=1 \
           CC=${CC_ANDROID} \
