@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4.3.1
         with:
           name: sing-box_linux_arm64
-          path: sing-box/sing-box*
+          path: sing-box/sing-box_linux_arm64
 
       - name: Upload Android
         uses: actions/upload-artifact@v4.3.1
