@@ -9,15 +9,13 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      TAGS: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,badlinkname,tfogo_checklinkname0
+      TAGS: with_gvisor,with_quic,with_dhcp,with_utls,with_clash_api,badlinkname,tfogo_checklinkname0,with_provider
 
     steps:
-      - name: Checkout sing-box (official)
-        uses: actions/checkout@v4
-        with:
-          repository: SagerNet/sing-box
-          ref: main-next
-          fetch-depth: 0
+      - name: git clone sing-box (official)
+        run: |
+          git clone --depth 1 -b main-next https://github.com/SagerNet/sing-box.git
+          cd sing-box
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -37,6 +35,7 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: |
           set -e
+          cd sing-box
 
           CC_ANDROID=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
 
@@ -46,7 +45,6 @@ jobs:
           GOARCH=amd64 \
           GOAMD64=v3 \
           make build
-
           mv sing-box sing-box_windows_amd64.exe || true
 
           echo "=== Build Android arm64 ==="
@@ -55,7 +53,6 @@ jobs:
           GOOS=android \
           GOARCH=arm64 \
           make build
-
           mv sing-box sing-box_android_arm64 || true
 
           echo "=== Build Linux arm64 ==="
@@ -63,23 +60,22 @@ jobs:
           GOOS=linux \
           GOARCH=arm64 \
           make build
-
           mv sing-box sing-box_linux_arm64 || true
 
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4.3.1
         with:
           name: sing-box_windows_amd64
-          path: sing-box_windows_amd64.exe
+          path: sing-box/sing-box_windows_amd64.exe
 
       - name: Upload Android Artifact
         uses: actions/upload-artifact@v4.3.1
         with:
           name: sing-box_android_arm64
-          path: sing-box_android_arm64
+          path: sing-box/sing-box_android_arm64
 
       - name: Upload Linux arm64 Artifact
         uses: actions/upload-artifact@v4.3.1
         with:
           name: sing-box_linux_arm64
-          path: sing-box_linux_arm64
+          path: sing-box/sing-box_linux_arm64
