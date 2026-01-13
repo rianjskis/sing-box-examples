@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      TAGS: with_gvisor,with_quic,with_dhcp,with_utls,with_clash_api,badlinkname,tfogo_checklinkname0,with_provider
+      TAGS: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,badlinkname,tfogo_checklinkname0
 
     steps:
       - name: Clone sing-box (main-next)
@@ -65,10 +65,10 @@ jobs:
         uses: actions/upload-artifact@v4.3.1
         with:
           name: sing-box_linux_arm64
-          path: sing-box/linux-arm64sing-box*
+          path: sing-box/sing-box*
 
       - name: Upload Android
         uses: actions/upload-artifact@v4.3.1
         with:
           name: sing-box_android
-          path: sing-box/androidsing-box
+          path: sing-box/sing-box
