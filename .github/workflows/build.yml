@@ -45,7 +45,6 @@ jobs:
           GOARCH=amd64 \
           GOAMD64=v3 \
           make build
-          mv sing-box sing-box_windows_amd64.exe
           
           echo "=== Build Android arm64 ==="
           CGO_ENABLED=1 \
@@ -53,14 +52,12 @@ jobs:
           GOOS=android \
           GOARCH=arm64 \
           make build
-          mv sing-box sing-box_android_arm64 || true
 
           echo "=== Build Linux arm64 ==="
           CGO_ENABLED=0 \
           GOOS=linux \
           GOARCH=arm64 \
           make build
-          mv sing-box sing-box_linux_arm64 || true
 
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4.3.1
