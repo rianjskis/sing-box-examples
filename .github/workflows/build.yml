@@ -46,26 +46,17 @@ jobs:
 
           CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
 
-          # Windows amd64
-          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 GOAMD64=v3 make build
-
           # Linux arm64
           CGO_ENABLED=0 GOOS=linux GOARCH=arm64 make build
 
           # Android arm64
           CGO_ENABLED=1 CC=${CC} GOOS=android GOARCH=arm64 make build
 
-      - name: Upload Windows
-        uses: actions/upload-artifact@v4.3.1
-        with:
-          name: sing-box_windows
-          path: sing-box/sing-box*.exe
-
       - name: Upload Linux arm64
         uses: actions/upload-artifact@v4.3.1
         with:
           name: sing-box_linux_arm64
-          path: sing-box/sing-box_linux_arm64
+          path: sing-box/sing-box
 
       - name: Upload Android
         uses: actions/upload-artifact@v4.3.1
