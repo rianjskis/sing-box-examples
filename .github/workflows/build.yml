@@ -52,7 +52,7 @@ jobs:
         go build -tags ${{ env.TAG_WINDOWS }} -v -o sing-box.exe -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
 
     - name: Upload files
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@main
       with:
         name: sing-box
         path: |
