@@ -1,81 +1,61 @@
-name: Build Core on
+name: build
+
+env:
+  ENV_LINUX: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
+  ENV_android: CGO_ENABLED=1 GOOS=android GOARCH=arm64 CC=${CC_ANDROID}
+  ENV_WINDOWS: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 GOAMD64=v3
+  TAG_android: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,badlinkname,tfogo_checklinkname0
+  TAG_LINUX: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,badlinkname,tfogo_checklinkname0
+  TAG_WINDOWS: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,badlinkname,tfogo_checklinkname0
 
 on:
   workflow_dispatch:
-  push:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    env:
-      TAGS: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,badlinkname,tfogo_checklinkname0
-
     steps:
-      - name: git clone sing-box (official)
-        run: |
-          git clone --depth 1 -b main-next https://github.com/SagerNet/sing-box.git
-          cd sing-box
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25.5'
+        cache: false
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ^1.25.5
+    - name: git clone
+      run: |
+        git clone --depth 1 -b main-next https://github.com/SagerNet/sing-box.git
 
-      - name: Setup Android NDK
-        uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-          ndk-version: r29
-          add-to-path: false
-          local-cache: false
+    - name: Setup Android NDK
+      uses: nttld/setup-ndk@v1
+      id: setup-ndk
+      with:
+        ndk-version: r29
+        add-to-path: false
+        local-cache: false
 
-      - name: Build sing-box
-        env:
-          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-        run: |
-          set -e
-          cd sing-box
+    - name: go build
+      env:
+        ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+      run: | 
+        set -e
 
-          CC_ANDROID=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
+        cd sing-box
 
-          echo "=== Build Windows amd64 ==="
-          CGO_ENABLED=0 \
-          GOOS=windows \
-          GOARCH=amd64 \
-          GOAMD64=v3 \
-          make build
-          mv sing-box sing-box_windows_amd64.exe || true
+        CC_ANDROID=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
 
-          echo "=== Build Android arm64 ==="
-          CGO_ENABLED=1 \
-          CC=${CC_ANDROID} \
-          GOOS=android \
-          GOARCH=arm64 \
-          make build
-          mv sing-box sing-box_android_arm64 || true
+        go env -w ${{ env.ENV_android }}
+        go build -tags ${{ env.TAG_android }} -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+        go env -w ${{ env.ENV_LINUX }}
+        go build -tags ${{ env.TAG_LINUX }} -v -o sing-box -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+        go env -w ${{ env.ENV_WINDOWS }}
+        go build -tags ${{ env.TAG_WINDOWS }} -v -o sing-box.exe -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
 
-          echo "=== Build Linux arm64 ==="
-          CGO_ENABLED=0 \
-          GOOS=linux \
-          GOARCH=arm64 \
-          make build
-          mv sing-box sing-box_linux_arm64 || true
-
-      - name: Upload Windows Artifact
-        uses: actions/upload-artifact@v4.3.1
-        with:
-          name: sing-box_windows_amd64
-          path: sing-box/sing-box_windows_amd64.exe
-
-      - name: Upload Android Artifact
-        uses: actions/upload-artifact@v4.3.1
-        with:
-          name: sing-box_android_arm64
-          path: sing-box/sing-box_android_arm64
-
-      - name: Upload Linux arm64 Artifact
-        uses: actions/upload-artifact@v4.3.1
-        with:
-          name: sing-box_linux_arm64
-          path: sing-box/sing-box_linux_arm64
+    - name: Upload files
+      uses: actions/upload-artifact@v3
+      with:
+        name: sing-box
+        path: |
+          sing-box/sing-box_linux_arm64
+          sing-box/sing-box_android_arm64
+          sing-box/sing-box_windows_amd64.exe
