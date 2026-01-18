@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  ENV_LINUX: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
+  ENV_LINUX: CGO_ENABLED=1 GOOS=linux GOARCH=arm64
   ENV_WINDOWS: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 GOAMD64=v3
   ENV_android: CGO_ENABLED=1 GOOS=android GOARCH=arm64
 
