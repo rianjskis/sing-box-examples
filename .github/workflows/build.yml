@@ -32,7 +32,6 @@ jobs:
           go run ./cmd/build-naive --target=linux/arm64 --libc=musl download-toolchain
 
       - name: Export cronet-go env
-        id: cronet-env
         run: |
           cd cronet-go
           go run ./cmd/build-naive --target=linux/arm64 --libc=musl env >> $GITHUB_ENV
@@ -51,8 +50,14 @@ jobs:
       - name: Build binaries
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          CGO_CFLAGS: ${{ env.CGO_CFLAGS }}
+          CGO_LDFLAGS: ${{ env.CGO_LDFLAGS }}
+          LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}
+          PATH: ${{ env.PATH }}
         run: |
           cd sing-box
+          go mod tidy
+          go mod download
 
           # Android
           CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
