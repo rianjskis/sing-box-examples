@@ -84,3 +84,29 @@ jobs:
           CGO_ENABLED=0 GOOS=windows GOARCH=amd64 GOAMD64=v3 \
           go build \
             -tags "$TAG_WINDOWS" \
+            -trimpath \
+            -ldflags "-s -w -buildid=" \
+            -o sing-box-windows-amd64.exe \
+            ./cmd/sing-box
+
+      # ==================================================
+      # Upload
+      # ==================================================
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sing-box
+          path: |
+            sing-box/sing-box-android-arm64
+            sing-box/sing-box-linux-arm64-musl
+            sing-box/sing-box-windows-amd64.exe
+
+      # ==================================================
+      # Cleanup
+      # ==================================================
+      - name: Delete old workflow runs
+        uses: Mattraks/delete-workflow-runs@main
+        with:
+          token: ${{ github.token }}
+          retain_days: 1
+          keep_minimum_runs: 5
