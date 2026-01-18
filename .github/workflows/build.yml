@@ -1,20 +1,13 @@
 name: sing-box-build
 
-env:
-  # ===== Android =====
-  ENV_ANDROID: CGO_ENABLED=1 GOOS=android GOARCH=arm64
-  TAG_ANDROID: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound
-
-  # ===== Linux (musl + naive) =====
-  ENV_LINUX: CGO_ENABLED=1 GOOS=linux GOARCH=arm64
-  TAG_LINUX: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_musl
-
-  # ===== Windows (purego + naive) =====
-  ENV_WINDOWS: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 GOAMD64=v3
-  TAG_WINDOWS: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego
-
 on:
   workflow_dispatch:
+
+env:
+  # ===== TAGS =====
+  TAG_ANDROID: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound
+  TAG_LINUX: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_musl
+  TAG_WINDOWS: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego
 
 jobs:
   build:
@@ -31,7 +24,9 @@ jobs:
         run: |
           git clone -b dev-next --depth=1 https://github.com/SagerNet/sing-box.git
 
-      # ================= ANDROID =================
+      # ==================================================
+      # Android arm64 (CGO + naive)
+      # ==================================================
       - name: Setup Android NDK
         uses: nttld/setup-ndk@v1
         id: setup-ndk
@@ -45,8 +40,8 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: |
           cd sing-box
-          export CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
-          go env -w $ENV_ANDROID
+          CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang \
+          CGO_ENABLED=1 GOOS=android GOARCH=arm64 \
           go build \
             -tags "$TAG_ANDROID" \
             -trimpath \
@@ -54,19 +49,23 @@ jobs:
             -o sing-box-android-arm64 \
             ./cmd/sing-box
 
-      # ================= LINUX (musl + naive) =================
-      - name: Setup cronet-go (musl toolchain)
+      # ==================================================
+      # Linux arm64 (musl + naive, static)
+      # ==================================================
+      - name: Setup cronet-go musl toolchain
         run: |
           git clone --recursive --depth=1 https://github.com/sagernet/cronet-go.git
           cd cronet-go
           go run ./cmd/build-naive --target=linux/arm64 --libc=musl download-toolchain
-          echo "EXPORT_ENV=$(go run ./cmd/build-naive --target=linux/arm64 --libc=musl env)" >> $GITHUB_ENV
+          echo "CRONET_ENV=$(go run ./cmd/build-naive --target=linux/arm64 --libc=musl env)" >> $GITHUB_ENV
 
       - name: Build Linux arm64 (musl)
         run: |
           cd sing-box
-          eval "$EXPORT_ENV"
-          go env -w $ENV_LINUX
+          unset CC
+          unset CXX
+          eval "$CRONET_ENV"
+          CGO_ENABLED=1 GOOS=linux GOARCH=arm64 \
           go build \
             -tags "$TAG_LINUX" \
             -trimpath \
@@ -74,32 +73,14 @@ jobs:
             -o sing-box-linux-arm64-musl \
             ./cmd/sing-box
 
-      # ================= WINDOWS (purego + naive) =================
-      - name: Build Windows amd64 (purego)
+      # ==================================================
+      # Windows amd64 (purego + naive)
+      # ==================================================
+      - name: Build Windows amd64
         run: |
           cd sing-box
-          go env -w $ENV_WINDOWS
+          unset CC
+          unset CXX
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 GOAMD64=v3 \
           go build \
             -tags "$TAG_WINDOWS" \
-            -trimpath \
-            -ldflags "-s -w -buildid=" \
-            -o sing-box-windows-amd64.exe \
-            ./cmd/sing-box
-
-      # ================= UPLOAD =================
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: sing-box
-          path: |
-            sing-box/sing-box-android-arm64
-            sing-box/sing-box-linux-arm64-musl
-            sing-box/sing-box-windows-amd64.exe
-
-      # ================= CLEANUP =================
-      - name: Delete old workflow runs
-        uses: Mattraks/delete-workflow-runs@main
-        with:
-          token: ${{ github.token }}
-          retain_days: 1
-          keep_minimum_runs: 5
