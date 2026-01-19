@@ -36,29 +36,33 @@ jobs:
 
     - name: Setup cronet-go (naive musl toolchain)
       run: |
-       git clone --recursive --depth=1 https://github.com/sagernet/cronet-go.git
-       cd cronet-go
-       go run ./cmd/build-naive --target=linux/arm64 --libc=musl download-toolchain
-       go run ./cmd/build-naive --target=linux/arm64 --libc=musl env >> $GITHUB_ENV
+        git clone --recursive --depth=1 https://github.com/sagernet/cronet-go.git
+        cd cronet-go
+        go run ./cmd/build-naive --target=linux/arm64 --libc=musl download-toolchain
+        go run ./cmd/build-naive --target=linux/arm64 --libc=musl env >> $GITHUB_ENV
 
     - name: Build project (musl)
       run: |
         cd sing-box
-        go build -tags with_musl ./cmd/sing-box
+        go env -w GOOS=linux GOARCH=arm64 CGO_ENABLED=1
+        go build -tags with_musl -v -o sing-box-linuxarm64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
 
-
-    - name: go build
+    - name: go build (multi-target)
       env:
-         ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
       run: | 
         cd sing-box
+        # Android
         CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
         go env -w ${{ env.ENV_android }}
         go build -tags ${{ env.TAG_android }} -v -o sing-box-androidarm64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+        # Linux (musl)
         go env -w ${{ env.ENV_LINUX }}
         go build -tags ${{ env.TAG_LINUX }} -v -o sing-box-linuxarm64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+        # Windows (purego)
         go env -w ${{ env.ENV_WINDOWS }}
         go build -tags ${{ env.TAG_WINDOWS }} -v -o sing-box.exe -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+
     - name: Upload files
       uses: actions/upload-artifact@main
       with:
@@ -67,6 +71,7 @@ jobs:
           sing-box/sing-box-androidarm64
           sing-box/sing-box-linuxarm64
           sing-box/sing-box.exe
+
     - name: 删除工作流程运行
       uses: Mattraks/delete-workflow-runs@main
       with:
