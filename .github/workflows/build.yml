@@ -38,8 +38,21 @@ jobs:
       run: |
        git clone --recursive --depth=1 https://github.com/sagernet/cronet-go.git
        cd cronet-go
-       go run ./cmd/build-naive --target=linux/arm64 --libc=musl download-toolchain
-       eval "$(go run ./cmd/build-naive --target=linux/arm64 --libc=musl env)"
+
+       go run ./cmd/build-naive \
+       --target=linux/arm64 \
+       --libc=musl \
+       download-toolchain
+
+       eval "$(
+       go run ./cmd/build-naive \
+       --target=linux/arm64 \
+       --libc=musl \
+       env | grep '^export '
+       )"
+
+       cd /path/to/your/project
+       go build -tags with_musl
 
        cd /path/to/your/project
        go build -tags with_musl
