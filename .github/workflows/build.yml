@@ -31,7 +31,6 @@ jobs:
         git clone --recursive --depth=1 https://github.com/sagernet/cronet-go.git
         cd cronet-go
         go run ./cmd/build-naive --target=linux/arm64 --libc=musl download-toolchain
-        export $(go run ./cmd/build-naive --target=linux/arm64 --libc=musl env)
         
     - name: Setup NDK
       uses: nttld/setup-ndk@v1
@@ -53,6 +52,7 @@ jobs:
     - name: go build LINUX
       run: | 
         cd sing-box
+        export $(go run ./cmd/build-naive --target=linux/arm64 --libc=musl env)
         go env -w ${{ env.ENV_LINUX }}
         go build -tags ${{ env.TAG_LINUX }} -v -o sing-box-linuxarm64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
 
