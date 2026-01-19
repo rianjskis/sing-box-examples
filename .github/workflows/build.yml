@@ -53,7 +53,7 @@ jobs:
       run: | 
         cd cronet-go
         export $(go run ./cmd/build-naive --target=linux/arm64 --libc=musl env)
-        cd sing-box
+        cd ../sing-box
         go env -w ${{ env.ENV_LINUX }}
         go build -tags ${{ env.TAG_LINUX }} -v -o sing-box-linuxarm64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
 
