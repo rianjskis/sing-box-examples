@@ -46,9 +46,9 @@ jobs:
         run: |
           CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
           # VERSION=$(CGO_ENABLED=0 go run ./cmd/internal/read_tag)
-          # CGO_ENABLED=1 CC=${CC} GOARCH=arm64 GOOS=android go build -v -trimpath -ldflags "-s -w -buildid=" -tags ${TAG_android} ./cmd/sing-box
-          # CGO_ENABLED=0 GOARCH=amd64 GOOS=windows GOAMD64=v3 go build -v -trimpath -ldflags "-s -w -buildid=" -tags ${TAG_WINDOWS} ./cmd/sing-box
-          # CGO_ENABLED=1 GOARCH=arm64 GOOS=linux go build -v -trimpath -ldflags "-s -w -buildid=" -tags ${TAG_LINUX} ./cmd/sing-box
+          # CGO_ENABLED=1 CC=${CC} GOARCH=arm64 GOOS=android go build -v -trimpath -ldflags "-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags ${TAG_android} ./cmd/sing-box
+          # CGO_ENABLED=0 GOARCH=amd64 GOOS=windows GOAMD64=v3 go build -v -trimpath -ldflags "-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -H windowsgui -s -w -buildid=" -tags ${TAG_WINDOWS} ./cmd/sing-box
+          # CGO_ENABLED=1 GOARCH=arm64 GOOS=linux go build -v -trimpath -ldflags "-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -H linuxarm64 -s -w -buildid=" -tags ${TAG_LINUX} ./cmd/sing-box
           CGO_ENABLED=0 GOARCH=amd64 GOOS=windows GOAMD64=v3 make build
           CGO_ENABLED=1 GOARCH=arm64 GOOS=linux make build
           CGO_ENABLED=1 CC=${CC} GOARCH=arm64 GOOS=android make build
@@ -59,11 +59,11 @@ jobs:
           name: sing-box_windows
           path: sing-box*.exe
 
-      - name: Upload linux
+      - name: Upload linuxarm64
         uses: actions/upload-artifact@v4.3.1
         with:
-          name: sing-box_linux
-          path: sing-box_linux
+          name: sing-box_linuxarm64
+          path: sing-box_linuxarm64
 
       - name: Upload Android
         uses: actions/upload-artifact@v4.3.1
