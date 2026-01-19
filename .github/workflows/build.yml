@@ -1,5 +1,13 @@
 name: build
 
+env:
+  ENV_LINUX: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
+  ENV_WINDOWS: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 GOAMD64=v3
+  ENV_android: CGO_ENABLED=1 CC=${CC} GOOS=android GOARCH=arm64
+  TAG_android: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor
+  TAG_LINUX: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor
+  TAG_WINDOWS: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor
+
 on:
   workflow_dispatch:
 
@@ -17,12 +25,6 @@ jobs:
     - name: git clone
       run: |
         git clone -b dev-next --depth=1 https://github.com/SagerNet/sing-box.git
-
-    - name: git cronet-go 
-      run: |
-        git clone --recursive --depth=1 https://github.com/sagernet/cronet-go.git
-        cd cronet-go
-        go run ./cmd/build-naive --target=linux/arm64 --libc=musl download-toolchain
         
     - name: Setup NDK
       uses: nttld/setup-ndk@v1
@@ -32,28 +34,18 @@ jobs:
         add-to-path: false
         local-cache: false
 
-    - name: go build android
+    - name: go build
       env:
          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
       run: | 
         cd sing-box
         CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
-        go env -w CGO_ENABLED=1 GOOS=android GOARCH=arm64 CC=${CC}
-        go build -tags with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound -v -o sing-box-androidarm64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
-
-    - name: go build LINUX
-      run: | 
-       export $(go run ./cmd/build-naive --target=linux/arm64 --libc=musl env)
-       cd ../sing-box
-       go env -w CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=$CC
-       go build -tags with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_musl -v -o sing-box-linuxarm64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
-
-
-    - name: go build WINDOWS
-      run: |
-        cd sing-box
-        go env -w CGO_ENABLED=0 GOOS=windows GOARCH=amd64 GOAMD64=v3
-        go build -tags with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego -v -o sing-box.exe -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+        go env -w ${{ env.ENV_android }}
+        go build -tags ${{ env.TAG_android }} -v -o sing-box-androidarm64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+        go env -w ${{ env.ENV_LINUX }}
+        go build -tags ${{ env.TAG_LINUX }} -v -o sing-box-linuxarm64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+        go env -w ${{ env.ENV_WINDOWS }}
+        go build -tags ${{ env.TAG_WINDOWS }} -v -o sing-box.exe -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
 
     - name: Upload files
       uses: actions/upload-artifact@main
