@@ -36,12 +36,14 @@ jobs:
 
     - name: Setup cronet-go (naive musl toolchain)
       run: |
-        git clone --recursive --depth=1 https://github.com/sagernet/cronet-go.git
-        cd cronet-go
-        go run ./cmd/build-naive --target=linux/arm64 --libc=musl download-toolchain
-        export $(go run ./cmd/build-naive --target=linux/arm64 --libc=musl env)
-        cd /path/to/your/project
-        go build -tags with_musl
+       git clone --recursive --depth=1 https://github.com/sagernet/cronet-go.git
+       cd cronet-go
+       go run ./cmd/build-naive --target=linux/arm64 --libc=musl download-toolchain
+       eval "$(go run ./cmd/build-naive --target=linux/arm64 --libc=musl env)"
+
+       cd /path/to/your/project
+       go build -tags with_musl
+
     - name: go build
       env:
          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
