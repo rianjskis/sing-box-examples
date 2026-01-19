@@ -59,6 +59,7 @@ jobs:
 
     - name: go build WINDOWS
       run: |
+        cd sing-box
         go env -w ${{ env.ENV_WINDOWS }}
         go build -tags ${{ env.TAG_WINDOWS }} -v -o sing-box.exe -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
 
