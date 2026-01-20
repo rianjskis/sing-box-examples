@@ -22,15 +22,14 @@ jobs:
         uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
-          ndk-version: r29
-          add-to-path: false
-          local-cache: false
+         ndk-version: r29
+         add-to-path: false
+         local-cache: false
 
       - name: Build sing-box (android arm64 naive)
         env:
            ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: |
-          set -euo pipefail
           cd sing-box
           CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
           export CGO_ENABLED=1
