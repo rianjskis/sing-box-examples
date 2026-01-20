@@ -18,32 +18,6 @@ jobs:
         run: |
           git clone -b dev-next --depth=1 https://github.com/SagerNet/sing-box.git
 
-      - name: Setup NDK
-        uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-         ndk-version: r29
-         add-to-path: false
-         local-cache: false
-
-      - name: Build sing-box (android arm64 naive)
-        env:
-           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-        run: |
-          cd sing-box
-          CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
-          export CGO_ENABLED=1
-          export GOOS=android
-          export GOARCH=arm64
-
-          TAGS="with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound"
-
-          go build -v -trimpath \
-            -tags "$TAGS" \
-            -ldflags "-s -w -buildid=" \
-            -o sing-box-androidarm64 \
-            ./cmd/sing-box
-
       - name: Clone cronet-go
         run: |
           git clone --recursive --depth=1 https://github.com/SagerNet/cronet-go.git
@@ -97,6 +71,32 @@ jobs:
             -o sing-box-windows-amd64.exe \
             ./cmd/sing-box
 
+      - name: Setup NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+         ndk-version: r29
+         add-to-path: false
+         local-cache: false
+
+      - name: Build sing-box (android arm64 naive)
+        env:
+           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          cd sing-box
+          CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
+          export CGO_ENABLED=1
+          export GOOS=android
+          export GOARCH=arm64
+
+          TAGS="with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound"
+
+          go build -v -trimpath \
+            -tags "$TAGS" \
+            -ldflags "-s -w -buildid=" \
+            -o sing-box-androidarm64 \
+            ./cmd/sing-box
+            
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
