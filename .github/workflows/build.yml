@@ -88,6 +88,7 @@ jobs:
           export CGO_ENABLED=1
           export GOOS=android
           export GOARCH=arm64
+          export CC=${CC}
 
           TAGS="with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound"
 
@@ -96,7 +97,7 @@ jobs:
             -ldflags "-s -w -buildid=" \
             -o sing-box-androidarm64 \
             ./cmd/sing-box
-            
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
