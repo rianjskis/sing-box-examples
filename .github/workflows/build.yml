@@ -1,4 +1,4 @@
-name: build-singbox-naiveon
+name: build-singbox-android-naive
 
 on:
   workflow_dispatch:
@@ -14,13 +14,6 @@ jobs:
           go-version: '1.25.5'
           cache: false
 
-      - name: Clone sing-box
-        run: |
-          git clone -b dev-next --depth=1 https://github.com/SagerNet/sing-box.git
-
-      # =====================================================
-      # Android arm64 + naive
-      # =====================================================
       - name: Setup Android NDK
         uses: nttld/setup-ndk@v1
         with:
@@ -28,6 +21,29 @@ jobs:
           add-to-path: false
           local-cache: false
 
+      - name: Clone sing-box (dev-next)
+        run: |
+          git clone -b dev-next --depth=1 https://github.com/SagerNet/sing-box.git
+
+      # =====================================================
+      # Build naive (cronet-go 官方流程 · Android arm64)
+      # =====================================================
+      - name: Prepare cronet-go toolchain (android arm64)
+        run: |
+          set -euo pipefail
+          cd sing-box/experimental/naive/cronet-go
+
+          go run ./cmd/build-naive \
+            --target=android/arm64 \
+            download-toolchain
+
+          go run ./cmd/build-naive \
+            --target=android/arm64 \
+            env >> "$GITHUB_ENV"
+
+      # =====================================================
+      # Build sing-box (android arm64 + naive)
+      # =====================================================
       - name: Build sing-box (android arm64 naive)
         run: |
           set -euo pipefail
@@ -37,8 +53,8 @@ jobs:
           export GOOS=android
           export GOARCH=arm64
 
-          export CC="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang"
-          export CXX="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++"
+          # 不手动指定 CC / CXX
+          # 完全使用 build-naive env 注入的工具链
           unset QEMU_LD_PREFIX
 
           TAGS="with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound"
@@ -49,12 +65,8 @@ jobs:
             -o sing-box-android-arm64 \
             ./cmd/sing-box
 
-      # =================
-      # Upload artifacts
-      # =================
-      - name: Upload artifacts
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sing-box-naive
-          path: |
-            sing-box/sing-box-android-arm64
+          name: sing-box-android-naive
+          path: sing-box/sing-box-android-arm64
