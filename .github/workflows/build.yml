@@ -30,7 +30,9 @@ jobs:
         env:
            ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: |
+          set -euo pipefail
           cd sing-box
+          CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
           export CGO_ENABLED=1
           export GOOS=android
           export GOARCH=arm64
@@ -49,7 +51,6 @@ jobs:
           name: sing-box-naive
           path: |
             sing-box/sing-box-androidarm64
- 
 
       - name: 删除工作流程运行
         uses: Mattraks/delete-workflow-runs@main
