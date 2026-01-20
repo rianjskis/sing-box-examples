@@ -26,32 +26,11 @@ jobs:
           add-to-path: false
           local-cache: false
 
-      - name: Clone cronet-go
-        run: |
-          git clone --recursive --depth=1 https://github.com/SagerNet/cronet-go.git
-
-      - name: Prepare cronet-go toolchain (linux arm64 musl)
-        run: |
-          set -euo pipefail
-          cd cronet-go
-
-          go run ./cmd/build-naive \
-            --target=linux/arm64 \
-            --libc=musl \
-            download-toolchain
-
-          go run ./cmd/build-naive \
-            --target=linux/arm64 \
-            --libc=musl \
-            env >> "$GITHUB_ENV"
-
       - name: Build sing-box (android arm64 naive)
         env:
            ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: |
-          set -euo pipefail
           cd sing-box
-
           export CGO_ENABLED=1
           export GOOS=android
           export GOARCH=arm64
@@ -64,48 +43,13 @@ jobs:
             -o sing-box-androidarm64 \
             ./cmd/sing-box
 
-      - name: Build sing-box (linux arm64 musl naive)
-        run: |
-          set -euo pipefail
-          cd sing-box
-
-          export CGO_ENABLED=1
-          export GOOS=linux
-          export GOARCH=arm64
-
-          TAGS="with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_musl"
-
-          go build -v -trimpath \
-            -tags "$TAGS" \
-            -ldflags "-s -w -buildid=" \
-            -o sing-box-linux-arm64-musl \
-            ./cmd/sing-box
-
-      - name: Build sing-box (windows amd64 purego naive)
-        run: |
-          set -euo pipefail
-          cd sing-box
-
-          export CGO_ENABLED=0
-          export GOOS=windows
-          export GOARCH=amd64
-
-          TAGS="with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound,with_purego"
-
-          go build -v -trimpath \
-            -tags "$TAGS" \
-            -ldflags "-s -w -buildid=" \
-            -o sing-box-windows-amd64.exe \
-            ./cmd/sing-box
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: sing-box-naive
           path: |
             sing-box/sing-box-androidarm64
-            sing-box/sing-box-linux-arm64-musl
-            sing-box/sing-box-windows-amd64.exe
+ 
 
       - name: 删除工作流程运行
         uses: Mattraks/delete-workflow-runs@main
