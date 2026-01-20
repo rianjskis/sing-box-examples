@@ -22,27 +22,30 @@ jobs:
         run: |
           git clone --recursive --depth=1 https://github.com/SagerNet/cronet-go.git
 
-      # ===============================
-      # Linux arm64 musl + naive (CGO)
-      # ===============================
-      - name: Build Linux arm64 musl (naive)
-        shell: bash
+      # =====================================================
+      # Linux arm64 musl + naive (完全对齐官方 cronet-go 流程)
+      # =====================================================
+      - name: Prepare cronet-go toolchain (linux arm64 musl)
         run: |
-          set -eux
-
+          set -euo pipefail
           cd cronet-go
+
+          # 下载 chromium + musl toolchain
           go run ./cmd/build-naive \
             --target=linux/arm64 \
             --libc=musl \
             download-toolchain
 
-          # ✅ 正确加载 cronet-go 环境（关键修复点）
-          eval "$(go run ./cmd/build-naive \
+          # 官方做法：直接写入 GITHUB_ENV
+          go run ./cmd/build-naive \
             --target=linux/arm64 \
             --libc=musl \
-            env)"
+            env >> "$GITHUB_ENV"
 
-          cd ../sing-box
+      - name: Build sing-box (linux arm64 musl naive)
+        run: |
+          set -euo pipefail
+          cd sing-box
 
           export CGO_ENABLED=1
           export GOOS=linux
@@ -56,14 +59,12 @@ jobs:
             -o sing-box-linux-arm64-musl \
             ./cmd/sing-box
 
-      # ===============================
-      # Windows amd64 purego + naive
-      # ===============================
-      - name: Build Windows amd64 (purego naive)
-        shell: bash
+      # =========================================
+      # Windows amd64 purego + naive（官方路径）
+      # =========================================
+      - name: Build sing-box (windows amd64 purego naive)
         run: |
-          set -eux
-
+          set -euo pipefail
           cd sing-box
 
           export CGO_ENABLED=0
@@ -75,5 +76,16 @@ jobs:
           go build -v -trimpath \
             -tags "$TAGS" \
             -ldflags "-s -w -buildid=" \
-            -o sing-box.exe \
+            -o sing-box-windows-amd64.exe \
             ./cmd/sing-box
+
+      # =================
+      # Upload artifacts
+      # =================
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sing-box-naive
+          path: |
+            sing-box/sing-box-linux-arm64-musl
+            sing-box/sing-box-windows-amd64.exe
