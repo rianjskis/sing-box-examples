@@ -22,29 +22,25 @@ jobs:
         run: |
           git clone --recursive --depth=1 https://github.com/SagerNet/cronet-go.git
 
-      - name: Setup NDK
-        uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-          ndk-version: r29
-          add-to-path: false
-
+      # ===============================
+      # Linux arm64 musl + naive (CGO)
+      # ===============================
       - name: Build Linux arm64 musl (naive)
+        shell: bash
         run: |
           set -eux
 
           cd cronet-go
-
-          # 下载并准备 musl + chromium toolchain（arm64）
           go run ./cmd/build-naive \
             --target=linux/arm64 \
             --libc=musl \
             download-toolchain
 
-          # 正确加载 cronet-go CGO 环境（关键）
-          source <(go run ./cmd/build-naive \
+          # ✅ 正确加载 cronet-go 环境（关键修复点）
+          eval "$(go run ./cmd/build-naive \
             --target=linux/arm64 \
-            --libc=musl env)
+            --libc=musl \
+            env)"
 
           cd ../sing-box
 
@@ -60,7 +56,11 @@ jobs:
             -o sing-box-linux-arm64-musl \
             ./cmd/sing-box
 
+      # ===============================
+      # Windows amd64 purego + naive
+      # ===============================
       - name: Build Windows amd64 (purego naive)
+        shell: bash
         run: |
           set -eux
 
