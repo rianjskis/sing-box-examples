@@ -22,23 +22,20 @@ jobs:
           local-cache: false
 
       # -----------------------------
-      # Clone sing-box
+      # Clone repositories
       # -----------------------------
       - name: Clone sing-box
         run: |
           git clone -b dev-next --depth=1 https://github.com/SagerNet/sing-box.git
 
-      # -----------------------------
-      # Clone cronet-go (官方做法)
-      # -----------------------------
       - name: Clone cronet-go
         run: |
-          git clone --depth=1 https://github.com/klzgrad/cronet-go.git
+          git clone --recursive --depth=1 https://github.com/SagerNet/cronet-go.git
 
       # -----------------------------
-      # Build naive toolchain (Android arm64)
+      # Prepare naive (android arm64)
       # -----------------------------
-      - name: Prepare naive (android arm64)
+      - name: Prepare cronet-go (android arm64)
         run: |
           set -euo pipefail
           cd cronet-go
@@ -54,7 +51,7 @@ jobs:
       # -----------------------------
       # Build sing-box (android arm64 + naive)
       # -----------------------------
-      - name: Build sing-box
+      - name: Build sing-box (android arm64 naive)
         run: |
           set -euo pipefail
           cd sing-box
@@ -63,7 +60,7 @@ jobs:
           export GOOS=android
           export GOARCH=arm64
 
-          # 关键：不要手动 CC / CXX
+          # 官方要求：不要覆盖 CC / CXX
           unset QEMU_LD_PREFIX
 
           TAGS="with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor,with_naive_outbound"
@@ -74,6 +71,9 @@ jobs:
             -o sing-box-android-arm64 \
             ./cmd/sing-box
 
+      # -----------------------------
+      # Upload artifact
+      # -----------------------------
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
