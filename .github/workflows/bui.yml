@@ -78,3 +78,9 @@ jobs:
             sing-box/sing-boxandroidarm64
             sing-box/sing-boxlinuxarm64
             sing-box/sing-box.exe
+      - name: 删除工作流程运行
+        uses: Mattraks/delete-workflow-runs@main
+        with:
+          token: ${{ github.token }}
+          retain_days: 1
+          keep_minimum_runs: 2
