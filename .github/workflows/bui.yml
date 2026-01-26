@@ -4,6 +4,7 @@ env:
   ENV_LINUX: CGO_ENABLED=0 GOOS=linux GOARCH=arm64
   ENV_android: CGO_ENABLED=1 CC=${CC} GOOS=android GOARCH=arm64
   ENV_WINDOWS: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 GOAMD64=v3
+
   TAG_android: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor
   TAG_LINUX: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor
   TAG_WINDOWS: with_quic,with_dhcp,with_utls,with_acme,with_clash_api,with_gvisor
@@ -16,41 +17,64 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Setup Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.25.6'
-        cache: false
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.6'
+          cache: false
 
-    - name: git clone
-      run: |
-        git clone --depth 1 https://github.com/SagerNet/sing-box.git
+      - name: Git clone
+        run: |
+          git clone --depth 1 https://github.com/SagerNet/sing-box.git
 
-    - name: Setup NDK
-      uses: nttld/setup-ndk@v1
-      id: setup-ndk
-       with:
-         ndk-version: r29
-         add-to-path: false
-         local-cache: false
-    - name: go build
-      env:
-         ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-      run: | 
-        cd sing-box
-        CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
-        go env -w ${{ env.ENV_LINUX }}
-        go build -tags ${{ env.TAG_LINUX }} -v -o sing-boxlinuxarm64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
-        go env -w ${{ env.ENV_android }}
-        go build -tags ${{ env.TAG_android }} -v -o sing-boxandroidarm64 -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
-        go env -w ${{ env.ENV_WINDOWS }}
-        go build -tags ${{ env.TAG_WINDOWS }} -v -o sing-box.exe -trimpath -ldflags "-s -w -buildid=" ./cmd/sing-box
+      - name: Setup NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r29
+          add-to-path: false
+          local-cache: false
 
-    - name: Upload files
-      uses: actions/upload-artifact@main
-      with:
-        name: sing-box
-        path: |
-          sing-box/sing-boxandroidarm64
-          sing-box/sing-boxlinuxarm64
-          sing-box/sing-box.exe
+      - name: Go build
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          cd sing-box
+
+          export CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
+
+          go env -w ${{ env.ENV_LINUX }}
+          go build \
+            -tags ${{ env.TAG_LINUX }} \
+            -v \
+            -o sing-boxlinuxarm64 \
+            -trimpath \
+            -ldflags "-s -w -buildid=" \
+            ./cmd/sing-box
+
+          go env -w ${{ env.ENV_android }}
+          go build \
+            -tags ${{ env.TAG_android }} \
+            -v \
+            -o sing-boxandroidarm64 \
+            -trimpath \
+            -ldflags "-s -w -buildid=" \
+            ./cmd/sing-box
+
+          go env -w ${{ env.ENV_WINDOWS }}
+          go build \
+            -tags ${{ env.TAG_WINDOWS }} \
+            -v \
+            -o sing-box.exe \
+            -trimpath \
+            -ldflags "-s -w -buildid=" \
+            ./cmd/sing-box
+
+      - name: Upload files
+        uses: actions/upload-artifact@main
+        with:
+          name: sing-box
+          path: |
+            sing-box/sing-boxandroidarm64
+            sing-box/sing-boxlinuxarm64
+            sing-box/sing-box.exe
